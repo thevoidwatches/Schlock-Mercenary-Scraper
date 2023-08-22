@@ -7,11 +7,45 @@ from selenium import webdriver
 
 from ebooklib import epub
 
-# When running the program from commandline, the -v or -V argument allows you to choose how much information is printed into the 
-if "-V" in sys.argv: VERBOSE = 2
-elif "-v" in sys.argv: VERBOSE = 1
-else: VERBOSE = 0
+# When running the program from commandline, the -v or -V argument allows you to choose how much information is printed into the command line.
+if "-V" in sys.argv:
+    VERBOSE = 2
+elif "-v" in sys.argv:
+    VERBOSE = 1
+else:
+    VERBOSE = 0
 
+# Argument that allows you to start at a later book in the comic.
+if "-b" in sys.argv:
+    URLS = [
+        "https://www.schlockmercenary.com/2000-06-12",
+        "https://www.schlockmercenary.com/2001-11-11",
+        "https://www.schlockmercenary.com/2003-03-09",
+        "https://www.schlockmercenary.com/2003-08-24",
+        "https://www.schlockmercenary.com/2004-03-15", # Book 5
+        "https://www.schlockmercenary.com/2004-09-12",
+        "https://www.schlockmercenary.com/2005-07-24",
+        "https://www.schlockmercenary.com/2006-08-17",
+        "https://www.schlockmercenary.com/2007-05-20",
+        "https://www.schlockmercenary.com/2008-02-29", # Book 10
+        "https://www.schlockmercenary.com/2009-03-02",
+        "https://www.schlockmercenary.com/2010-11-29",
+        "https://www.schlockmercenary.com/2011-11-13",
+        "https://www.schlockmercenary.com/2013-01-01",
+        "https://www.schlockmercenary.com/2014-03-16", # Book 15
+        "https://www.schlockmercenary.com/2015-03-30",
+        "https://www.schlockmercenary.com/2016-12-05",
+        "https://www.schlockmercenary.com/2017-09-18",
+        "https://www.schlockmercenary.com/2018-07-25",
+        "https://www.schlockmercenary.com/2019-06-16"  # Book 20
+    ]
+    try:
+        URL = URLS[sys.argv[sys.argv.index("-b") + 1] - 1]
+    except:
+        print("Please enter a number between 1 and 20 when using the -b argument.")
+        exit()
+else:
+    URL = "https://www.schlockmercenary.com/2000-06-12"
 
 def clean_unicode(text: str) -> str:
     """Function used to clean text before saving to a file that may not
@@ -30,11 +64,8 @@ def clean_unicode(text: str) -> str:
     text = text.replace("--","-")
     return text
 
-
 opt = webdriver.FirefoxOptions()
 opt.add_argument('-headless')
-
-URL="https://www.schlockmercenary.com/2000-06-12"
 
 if VERBOSE > 1: print("Opening webdriver...")
 with webdriver.Firefox(options = opt) as driver:
@@ -137,35 +168,37 @@ with webdriver.Firefox(options = opt) as driver:
                 toc = []
                 spine = ["nav"]
 
-            # After the previous book has been saved, or at the beginning of the programming, creates a new book to be used in the future.
-            book = epub.EpubBook()
-            book.set_language("en")
-            book.add_author("Howard Taylor")
-            book.add_item(epub.EpubNcx())
-            book.add_item(epub.EpubNav())
-            book.spine = ["nav,"]
+            # After the previous book has been saved, or at the beginning of the programming, creates a new book to be used in the future (unless only downloading 1 book)
+            if "-b" in sys.argv:
+                end = True
+            else:
+                book = epub.EpubBook()
+                book.set_language("en")
+                book.add_author("Howard Taylor")
+                book.add_item(epub.EpubNcx())
+                book.add_item(epub.EpubNav())
+                book.spine = ["nav,"]
 
-            # The first chapter of a new book is created with the HTML code for a title block.
-            currChapter += """            
-<div style="display: block; margin: auto box-shadow: 5px 5px 10px black;">
-    <h1> """ + newBookTitle + """ </h1>
-    <h2> <i> by Howard Taylor </i> </h2> 
-</div>
+                # The first chapter of a new book is created with the HTML code for a title block.
+                currChapter += """            
+    <div style="display: block; margin: auto box-shadow: 5px 5px 10px black;">
+        <h1> """ + newBookTitle + """ </h1>
+        <h2> <i> by Howard Taylor </i> </h2> 
+    </div>
 
-<div class="pagebreak" style="page-break-after: always" />
+    <div class="pagebreak" style="page-break-after: always" />
 """
         if end:
-            # If the program has reached the end of comic, break the while look even if there are still pages in the queue.
+            # If the program has reached the end of comic, break the while loop even if there are still pages in the queue.
             break
 
         if chapPageNum == 1:
             # For the first page of each chapter, add the HTML code for a title block.
-            if VERBOSE:
-                if chapNum == 1:
-                    print(
-                        "Beginning Book " + str(newBookNum) + ": "
-                        + newBookTitle + "...")
-                print("   Beginning Chapter " + str(chapNum) + ": " + newChapterTitle + "...")
+            if chapNum == 1:
+                print(
+                    "Beginning Book " + str(newBookNum) + ": "
+                    + newBookTitle + "...")
+            print("   Beginning Chapter " + str(chapNum) + ": " + newChapterTitle + "...")
             currChapter += """
 <div style="display: block; margin: auto box-shadow: 5px 5px 10px black;">
     <center> <h3> """ + newChapterTitle + """ </h3> </center>
